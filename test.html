@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Module Test</title>
+</head>
+<body>
+    <h1>Check Console</h1>
+    <script type="module">
+        console.log('Module script loading...');
+
+        try {
+            const { physics } = await import('./js/modules/config.js');
+            console.log('✓ config.js loaded:', physics);
+        } catch (e) {
+            console.error('✗ config.js failed:', e);
+        }
+
+        try {
+            const { GameState } = await import('./js/modules/gameState.js');
+            console.log('✓ gameState.js loaded');
+
+            // Test if DOM is ready
+            console.log('playButton exists:', document.getElementById('playButton'));
+        } catch (e) {
+            console.error('✗ gameState.js failed:', e);
+        }
+    </script>
+</body>
+</html>

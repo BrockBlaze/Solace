@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solace - FPS WebGL Game</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    <div id="crosshair"></div>
+    <div id="ui">
+        <div>Health: <span id="health">100</span></div>
+        <div style="margin-top: 10px; font-size: 16px;">
+            <div>Weapon 1: <span id="weapon1" style="color: #aaa;">Empty</span></div>
+            <div>Weapon 2: <span id="weapon2" style="color: #aaa;">Empty</span></div>
+        </div>
+        <div style="margin-top: 10px;">Grenades: <span id="grenadeCount">3</span></div>
+        <div style="margin-top: 15px; font-size: 14px; color: #ffaa00;">
+            [E] Pick up | [Q] Drop | [1][2] Switch | [G] Grenade
+        </div>
+    </div>
+    <div id="fps">
+        FPS: <span id="fpsValue">60</span>
+    </div>
+
+    <!-- Main Menu -->
+    <div id="mainMenu">
+        <h1>SOLACE</h1>
+        <button class="menu-button" id="playButton">Play</button>
+        <button class="menu-button" id="mainSettingsButton">Settings</button>
+    </div>
+
+    <!-- Settings Menu -->
+    <div id="settingsMenu" class="hidden">
+        <h2 style="color: white; font-size: 48px; margin-bottom: 30px;">Settings</h2>
+
+        <div class="settings-section">
+            <div class="setting-item">
+                <label for="mainMouseSensitivity">Mouse Sensitivity</label>
+                <div>
+                    <input type="range" id="mainMouseSensitivity" min="0.5" max="5" step="0.1" value="2">
+                    <span id="mainSensitivityValue" style="margin-left: 10px;">2.0</span>
+                </div>
+            </div>
+
+            <div class="setting-item">
+                <label for="mainMovementSpeed">Movement Speed</label>
+                <div>
+                    <input type="range" id="mainMovementSpeed" min="0.05" max="0.3" step="0.01" value="0.1">
+                    <span id="mainSpeedValue" style="margin-left: 10px;">0.10</span>
+                </div>
+            </div>
+
+            <div class="setting-item">
+                <label for="mainFOV">Field of View</label>
+                <div>
+                    <input type="range" id="mainFOV" min="60" max="120" step="1" value="75">
+                    <span id="mainFOVValue" style="margin-left: 10px;">75°</span>
+                </div>
+            </div>
+
+            <div class="setting-item">
+                <label for="mainInvertMouse">Invert Mouse</label>
+                <input type="checkbox" id="mainInvertMouse">
+            </div>
+
+            <div class="setting-item">
+                <label for="mainShowFPS">Show FPS</label>
+                <input type="checkbox" id="mainShowFPS">
+            </div>
+        </div>
+
+        <button class="menu-button" id="backToMainButton" style="margin-top: 30px;">Back</button>
+    </div>
+
+    <!-- Pause Menu -->
+    <div id="pauseMenu" class="hidden">
+        <h2>Paused</h2>
+
+        <div class="settings-section" style="margin-bottom: 20px;">
+            <h3 style="color: white; text-align: center; margin-bottom: 20px;">Controls</h3>
+            <div style="color: white; text-align: center; font-size: 16px;">
+                <p><span class="key">WASD</span> - Move</p>
+                <p><span class="key">Mouse</span> - Look Around</p>
+                <p><span class="key">Left Click</span> - Shoot</p>
+                <p><span class="key">Space</span> - Jump</p>
+                <p><span class="key">P</span> or <span class="key">Tab</span> - Pause Menu</p>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h3 style="color: white; text-align: center; margin-bottom: 20px;">Settings</h3>
+
+            <div class="setting-item">
+                <label for="mouseSensitivity">Mouse Sensitivity</label>
+                <div>
+                    <input type="range" id="mouseSensitivity" min="0.5" max="5" step="0.1" value="2">
+                    <span id="sensitivityValue" style="margin-left: 10px;">2.0</span>
+                </div>
+            </div>
+
+            <div class="setting-item">
+                <label for="movementSpeed">Movement Speed</label>
+                <div>
+                    <input type="range" id="movementSpeed" min="0.05" max="0.3" step="0.01" value="0.1">
+                    <span id="speedValue" style="margin-left: 10px;">0.10</span>
+                </div>
+            </div>
+
+            <div class="setting-item">
+                <label for="fov">Field of View</label>
+                <div>
+                    <input type="range" id="fov" min="60" max="120" step="1" value="75">
+                    <span id="fovValue" style="margin-left: 10px;">75°</span>
+                </div>
+            </div>
+
+            <div class="setting-item">
+                <label for="invertMouse">Invert Mouse</label>
+                <input type="checkbox" id="invertMouse">
+            </div>
+
+            <div class="setting-item">
+                <label for="showFPS">Show FPS</label>
+                <input type="checkbox" id="showFPS">
+            </div>
+        </div>
+
+        <div class="pause-buttons">
+            <button class="menu-button" id="resumeButton">Resume</button>
+            <button class="menu-button" id="restartButton">Restart</button>
+            <button class="menu-button" id="mainMenuButton">Main Menu</button>
+        </div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>

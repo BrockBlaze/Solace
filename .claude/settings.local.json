@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m http.server:*)",
+      "Bash(timeout:*)",
+      "Bash(npx -y http-server -p 8000 -o)",
+      "Bash(npx -y http-server -p 8000)",
+      "Bash(start index.html)",
+      "Bash(curl:*)"
+    ]
+  }
+}
