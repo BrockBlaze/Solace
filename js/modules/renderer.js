@@ -3,11 +3,13 @@
  */
 import { mat4 } from '../lib/mat4.js';
 import { weaponTypes } from './config.js';
+import { OBJLoader } from './objLoader.js';
 
 export class Renderer {
     constructor(canvas) {
         this.canvas = canvas;
         this.gl = canvas.getContext('webgl');
+        this.modelsLoaded = false;
 
         if (!this.gl) {
             alert('WebGL not supported');
@@ -15,7 +17,10 @@ export class Renderer {
         }
 
         this.setupWebGL();
-        this.setupGeometry();
+        this.setupGeometry().then(() => {
+            this.modelsLoaded = true;
+            console.log('All models loaded');
+        });
         this.resizeCanvas();
         window.addEventListener('resize', () => this.resizeCanvas());
     }
@@ -289,13 +294,38 @@ export class Renderer {
         return shader;
     }
 
-    setupGeometry() {
+    async setupGeometry() {
         this.cubeGeometry = this.createCube();
         this.groundGeometry = this.createGround();
         this.smallCubeGeometry = this.createSmallCube();
-        this.weaponGeometry = this.createWeaponModel();
+        this.weaponGeometry = this.createWeaponModel(); // Temporary fallback
+
+        // Load pistol model from OBJ file
+        try {
+            const pistolData = await OBJLoader.load('assets/models/pistol/Beretta_M9.obj');
+            this.pistolGeometry = this.createGeometryFromOBJ(pistolData);
+            console.log('Pistol model loaded:', pistolData.count, 'vertices');
+        } catch (error) {
+            console.error('Failed to load pistol model:', error);
+            this.pistolGeometry = this.weaponGeometry; // Use fallback
+        }
+
         this.cubeColorBuffer = this.createColorBuffer([1, 0, 0], this.cubeGeometry.count);
         this.groundColorBuffer = this.createColorBuffer([0.3, 0.5, 0.3], this.groundGeometry.count);
+    }
+
+    createGeometryFromOBJ(objData) {
+        const gl = this.gl;
+
+        const buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(objData.vertices), gl.STATIC_DRAW);
+
+        const normalBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(objData.normals), gl.STATIC_DRAW);
+
+        return { buffer, normalBuffer, count: objData.count };
     }
 
     createCube() {
@@ -792,8 +822,8 @@ export class Renderer {
             const pickupMatrix = mat4.create();
             mat4.identity(pickupMatrix);
             mat4.translate(pickupMatrix, pickupMatrix, pickup.position);
-            // Rotate to lay flat on ground (90 degrees around Z axis)
-            mat4.rotateZ(pickupMatrix, pickupMatrix, Math.PI / 2);
+            // Rotate to lay flat on ground (-90 degrees around Z axis)
+            mat4.rotateZ(pickupMatrix, pickupMatrix, -Math.PI / 2);
             // Use pickup's rotation for variety around Y axis
             mat4.rotateY(pickupMatrix, pickupMatrix, pickup.rotation);
             mat4.scale(pickupMatrix, pickupMatrix, [0.8, 0.8, 0.8]);
@@ -927,15 +957,34 @@ export class Renderer {
         gl.enable(gl.CULL_FACE);
         gl.cullFace(gl.BACK);
 
+        // Select geometry based on weapon type
+        let geometry = this.weaponGeometry; // Default fallback
+        let scale = [0.30, 0.30, 0.30];
+        let position = [0.22, -0.15, -0.35];
+
+        if (currentWeapon.type === 'pistol' && this.pistolGeometry) {
+            geometry = this.pistolGeometry;
+            // Pistol needs different scale and position (OBJ models use centimeters)
+            scale = [0.008, 0.008, 0.008]; // Smaller scale for proper size
+            position = [0.18, -0.14, -0.35]; // Right, down, forward
+        }
+
         // Create weapon matrix in screen space (relative to camera)
         const weaponMatrix = mat4.create();
         mat4.identity(weaponMatrix);
 
-        // Position weapon closer to camera (right and down from center)
-        mat4.translate(weaponMatrix, weaponMatrix, [0.22, -0.15, -0.35]);
+        // Position weapon
+        mat4.translate(weaponMatrix, weaponMatrix, position);
 
-        // Scale the weapon slightly smaller for better proportions
-        mat4.scale(weaponMatrix, weaponMatrix, [0.30, 0.30, 0.30]);
+        // Rotate pistol to point forward (OBJ model is sideways in original orientation)
+        if (currentWeapon.type === 'pistol') {
+            // Adjust rotation to make pistol point forward correctly
+            mat4.rotateZ(weaponMatrix, weaponMatrix, -Math.PI / 2); // Rotate to point barrel forward
+            mat4.rotateX(weaponMatrix, weaponMatrix, Math.PI); // Flip right-side up
+        }
+
+        // Scale the weapon
+        mat4.scale(weaponMatrix, weaponMatrix, scale);
 
         // Use identity view matrix for screen-space rendering
         const identityView = mat4.create();
@@ -943,22 +992,22 @@ export class Renderer {
         gl.uniformMatrix4fv(this.uViewMatrix, false, identityView);
         gl.uniformMatrix4fv(this.uModelMatrix, false, weaponMatrix);
 
-        // Draw weapon using new weapon geometry
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.weaponGeometry.buffer);
+        // Draw weapon
+        gl.bindBuffer(gl.ARRAY_BUFFER, geometry.buffer);
         gl.vertexAttribPointer(this.aPosition, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.aPosition);
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.weaponGeometry.normalBuffer);
+        gl.bindBuffer(gl.ARRAY_BUFFER, geometry.normalBuffer);
         gl.vertexAttribPointer(this.aNormal, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.aNormal);
 
         const weaponColor = weaponTypes[currentWeapon.type].color;
-        const colorBuffer = this.createColorBuffer(weaponColor, this.weaponGeometry.count);
+        const colorBuffer = this.createColorBuffer(weaponColor, geometry.count);
         gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
         gl.vertexAttribPointer(this.aColor, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(this.aColor);
 
-        gl.drawArrays(gl.TRIANGLES, 0, this.weaponGeometry.count);
+        gl.drawArrays(gl.TRIANGLES, 0, geometry.count);
 
         // Re-enable depth test, disable culling, and restore view matrix
         gl.enable(gl.DEPTH_TEST);
